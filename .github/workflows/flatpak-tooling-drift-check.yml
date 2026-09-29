@@ -39,7 +39,19 @@ jobs:
 
           DRIFTED=""
           for repo in $REPOS; do
-            SHA=$(gh api "repos/tuna-os/${repo}/contents/.github/scripts/update-index.py" --jq '.sha' 2>/dev/null || echo "MISSING")
+            # On a 404, gh api prints the raw error body to stdout before
+            # exiting non-zero (2>/dev/null only silences stderr). With the
+            # old `SHA=$(cmd || echo MISSING)` form both cmd's stdout and the
+            # fallback echo land inside the same $(...) capture, leaving SHA
+            # polluted (e.g. `{"message":"Not Found",...}MISSING`) so it
+            # never equals the literal "MISSING" the check below expects —
+            # false "drifted" for repos that already migrated the file away
+            # (see gtk-office-suite, tuna-os/.github#31). Assigning SHA only
+            # from the gh api call, and overwriting it on failure, avoids the
+            # pollution.
+            if ! SHA=$(gh api "repos/tuna-os/${repo}/contents/.github/scripts/update-index.py" --jq '.sha' 2>/dev/null); then
+              SHA="MISSING"
+            fi
             if [[ "$SHA" == "MISSING" ]]; then
               echo "::warning::${repo}: .github/scripts/update-index.py not found (already migrated off the copy, or moved)"
             elif [[ "$SHA" != "$CANONICAL_SHA" ]]; then

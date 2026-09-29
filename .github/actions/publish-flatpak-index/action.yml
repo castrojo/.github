@@ -89,9 +89,11 @@ runs:
           rm -rf "$INDEX_REPO"
           git clone --depth 1 "https://github.com/${DOCS_REPO}.git" "$INDEX_REPO"
           # Header-based auth so the token never lands in .git/config, `git
-          # remote -v`, or process listings.
-          git -C "$INDEX_REPO" config --local http.extraheader \
-            "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$FLATPAK_INDEX_TOKEN" | base64 -w0)"
+          # remote -v`, or process listings. Use stdin to keep token out of
+          # process arguments where it could be captured by ps/proc inspection.
+          local auth_header
+          auth_header="AUTHORIZATION: basic $(echo -n "x-access-token:$FLATPAK_INDEX_TOKEN" | base64 -w0)"
+          git -C "$INDEX_REPO" config --local http.extraheader "$auth_header"
           git -C "$INDEX_REPO" config user.name "github-actions[bot]"
           git -C "$INDEX_REPO" config user.email "github-actions[bot]@users.noreply.github.com"
         }

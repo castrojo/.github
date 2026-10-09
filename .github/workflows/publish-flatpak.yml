@@ -92,12 +92,14 @@ on:
     secrets:
       FLATPAK_INDEX_TOKEN:
         required: true
-
 permissions:
-  # contents: write covers checkout and `gh release upload` (release assets);
-  # packages: write covers pushing the OCI images to GHCR and the index push.
-  contents: write
-  packages: write
+  contents: read
+  # Least privilege: every job starts with read-only access to the caller's
+  # repository (actions/checkout, download-artifact). Each job below grants
+  # only the extra scope it genuinely needs -- see the job-level blocks. This
+  # replaces the previous implicit behaviour, where a reusable workflow with no
+  # permissions block inherited *whatever* the caller granted, so a caller that
+  # set broad permissions leaked them into the build job too.
 
 jobs:
   build-oci:
@@ -167,6 +169,9 @@ jobs:
 
   publish:
     name: Publish
+    permissions:
+      contents: read
+      packages: write
     needs: build-oci
     if: inputs.publish
     runs-on: ubuntu-24.04
@@ -251,6 +256,8 @@ jobs:
 
   release-bundles:
     name: Attach bundles to release
+    permissions:
+      contents: write
     needs: publish
     if: inputs.attach-bundles && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-24.04

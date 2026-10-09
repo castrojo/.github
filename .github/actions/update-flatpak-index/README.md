@@ -4,6 +4,10 @@ Canonical, single-source copy of `update-index.py` (tuna-os/tunaos#1183: the
 script was byte-copied — identical git blob `127aed10...` — across 8 repos,
 each independently drifting).
 
+This action routes every `with:` input through `env:` rather than shell
+interpolation — see [Action Input Security](../../ACTION-SECURITY.md) for the
+pattern and the injection risk it prevents.
+
 ## Usage
 
 Replace a repo's local `python3 .github/scripts/update-index.py ...` call

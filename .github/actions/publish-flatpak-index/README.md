@@ -4,6 +4,11 @@ Wraps [`update-flatpak-index`](../update-flatpak-index) with the clone,
 commit, and push against `tuna-os/docs` — with a retry loop, because that
 push routinely loses a race.
 
+This action routes every `with:` input — including the push `token` secret —
+through `env:` rather than shell interpolation. See
+[Action Input Security](../../ACTION-SECURITY.md) for the pattern and why a
+secret must never be interpolated into a `run:` body.
+
 ## The bug this fixes
 
 Every app repo's `publish-flatpak.yml` clones `tuna-os/docs`, edits its own

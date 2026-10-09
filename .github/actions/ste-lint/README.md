@@ -3,6 +3,11 @@
 Checks Markdown prose against [ASD-STE100](https://asd-ste100.org/) —
 Simplified Technical English — with a per-repo budget.
 
+The values this action actually runs (`budget-file`, `budget`, `base-ref`,
+`annotations`) are routed through `env:` rather than shell interpolation — see
+[Action Input Security](../../ACTION-SECURITY.md) for the pattern and when
+interpolation is still safe.
+
 Most repos should call the reusable workflow rather than this action directly:
 
 ```yaml

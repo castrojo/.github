@@ -13,8 +13,14 @@ name: Flatpak Tooling Drift Check
 #
 # "Missing" is never treated as "migrated" on its own: a repo that moved or
 # dropped the file without adopting the shared tooling fails the check.
+#
+# Runs on every push to main (not just the weekly schedule) so drift is flagged
+# the moment a copy diverges or a repo drops its copy without migrating, instead
+# of up to a week later. See tuna-os/.github#279.
 
 on:
+  push:
+    branches: [main]
   schedule:
     - cron: "0 6 * * 1" # Monday 06:00 UTC
   workflow_dispatch:

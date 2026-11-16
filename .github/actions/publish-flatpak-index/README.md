@@ -63,8 +63,25 @@ the PAT in `FLATPAK_INDEX_TOKEN` failed every publish in November 2026
 `Markdown Lint` required check (repository ruleset), so the index commit can
 land on `main` directly. The host key of github.com is pinned in the action.
 
+Scope of `FLATPAK_INDEX_DEPLOY_KEY`: one repository (`tuna-os/docs`), Git
+contents read and write over SSH, and no GitHub API access. It cannot open or
+merge pull requests, change settings, or read another repository.
+
 `token` still works for a caller that has not moved over; it is read only
 when `ssh-key` is empty.
+
+## Commit provenance
+
+All index commits use the `github-actions[bot]` identity, whichever repository
+made them. So the action ends each message with trailers that name the run:
+
+```text
+Source-Repository: tuna-os/example
+Source-Workflow: tuna-os/example/.github/workflows/release.yml@refs/tags/v1
+Source-Run: https://github.com/tuna-os/example/actions/runs/42/attempts/1
+```
+
+`git log --format='%(trailers:key=Source-Run)'` on `docs-repo` lists them.
 
 ## Generated icon artifacts
 

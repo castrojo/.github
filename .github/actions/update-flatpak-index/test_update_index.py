@@ -5,6 +5,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -311,6 +312,81 @@ class UpdateIndexTests(unittest.TestCase):
             result = self.run_cli(temp_dir, oci_dir, "--require-appstream")
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(index_file.exists())
+
+
+class PublishFlatpakIndexActionTests(unittest.TestCase):
+    """Run publish-flatpak-index's script against a local docs-repo."""
+
+    ACTION = Path(__file__).resolve().parent.parent / "publish-flatpak-index" / "action.yml"
+    REMOTE = "git@github.com:example/docs.git"
+
+    def git(self, env, *args, cwd=None):
+        return subprocess.run(
+            ["git", *args], cwd=cwd, env=env, capture_output=True, text=True, check=True
+        ).stdout
+
+    def test_index_commit_names_its_source_run(self):
+        import yaml  # update-index.py itself needs only the standard library
+
+        action = yaml.safe_load(self.ACTION.read_text(encoding="utf-8"))
+        script = action["runs"]["steps"][0]["run"]
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            oci_dir, _ = UpdateIndexTests.write_oci_layout(self, root)
+            docs_repo = root / "docs.git"
+            env = {
+                "PATH": os.environ["PATH"],
+                "HOME": str(root),
+                "GIT_CONFIG_NOSYSTEM": "1",
+                # Serve the docs-repo remote from a local bare repository.
+                "GIT_CONFIG_COUNT": "1",
+                "GIT_CONFIG_KEY_0": f"url.{docs_repo.as_uri()}.insteadOf",
+                "GIT_CONFIG_VALUE_0": self.REMOTE,
+            }
+            self.git(env, "init", "-q", "--bare", "-b", "main", str(docs_repo))
+            seed = root / "seed"
+            self.git(env, "clone", "-q", self.REMOTE, str(seed))
+            (seed / "static" / "flatpak" / "index").mkdir(parents=True)
+            (seed / "static" / "flatpak" / "index" / "static").write_text("{}\n")
+            self.git(env, "add", "-A", cwd=seed)
+            self.git(env, "-c", "user.name=t", "-c", "user.email=t@example.invalid",
+                     "commit", "-q", "-m", "seed", cwd=seed)
+            self.git(env, "push", "-q", "origin", "HEAD:main", cwd=seed)
+
+            run_env = {
+                **env,
+                "ACTION_PATH": str(self.ACTION.parent),
+                "OCI_DIR": str(oci_dir),
+                "INDEX_FILE": "static/flatpak/index/static",
+                "REPO_NAME": "tuna-os/example",
+                "REGISTRY": "ghcr.io",
+                "TAGS": "latest",
+                "DOCS_REPO": "example/docs",
+                "FLATPAK_INDEX_SSH_KEY": "not-a-key",
+                "FLATPAK_INDEX_TOKEN": "",
+                "MAX_ATTEMPTS": "1",
+                "GITHUB_REPOSITORY": "tuna-os/example",
+                "GITHUB_WORKFLOW_REF": "tuna-os/example/.github/workflows/release.yml@refs/tags/v1",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_RUN_ID": "42",
+                "GITHUB_RUN_ATTEMPT": "2",
+            }
+            result = subprocess.run(
+                ["bash", "-c", script], env=run_env, capture_output=True, text=True, check=False
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            message = self.git(env, "--git-dir", str(docs_repo), "log", "-1", "--format=%B", "main")
+
+        self.assertEqual(
+            message.strip().splitlines(),
+            [
+                "chore(flatpak): update tuna-os/example OCI index",
+                "",
+                "Source-Repository: tuna-os/example",
+                "Source-Workflow: tuna-os/example/.github/workflows/release.yml@refs/tags/v1",
+                "Source-Run: https://github.com/tuna-os/example/actions/runs/42/attempts/2",
+            ],
+        )
 
 
 if __name__ == "__main__":

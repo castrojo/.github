@@ -162,7 +162,13 @@ runs:
             popd >/dev/null
             break
           fi
-          git commit -q -m "chore(flatpak): update ${REPO_NAME} OCI index"
+          # docs-repo receives index commits from many repositories under one
+          # bot identity. Name the run that made each one, so an index change
+          # can be traced to its source without the credential's audit log.
+          git commit -q -m "chore(flatpak): update ${REPO_NAME} OCI index" \
+            -m "$(printf 'Source-Repository: %s\nSource-Workflow: %s\nSource-Run: %s' \
+              "$GITHUB_REPOSITORY" "$GITHUB_WORKFLOW_REF" \
+              "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT}")"
 
           if push_err="$(git push origin HEAD:main 2>&1)"; then
             echo "Pushed index update for $REPO_NAME (attempt $attempt)"

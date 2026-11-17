@@ -1,0 +1,31 @@
+name: "Flatpak Copy-Up"
+description: >-
+  Makes the Flatpak installations baked into a flatpak-github-actions container
+  image updatable on any runner host. Updating a runtime makes Flatpak rename
+  the deploy directory it retires. When the container's overlayfs root is
+  mounted without redirect_dir, as it is on some GitHub-hosted x86_64 runners,
+  renaming a directory that came from an image layer fails with EXDEV, and
+  flatpak-builder --install-deps-from stops with "Failed to update
+  org.gnome.Sdk: Invalid cross-device link". This action probes for that, and
+  only then copies each installation into the container's writable layer, so
+  every later rename stays on one layer. On hosts where the rename works it
+  changes nothing. Run it in the container job before flatpak-builder.
+
+inputs:
+  installations:
+    description: >-
+      Space-separated Flatpak installation directories to check. Empty means
+      the system installation (/var/lib/flatpak) and the user installation in
+      $HOME.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Copy image Flatpak installations into the writable layer
+      shell: bash
+      env:
+        # Read via env, never interpolated into the script text (AGENTS.md).
+        FLATPAK_INSTALLATIONS: ${{ inputs.installations }}
+      run: bash "$GITHUB_ACTION_PATH/copy-up.sh"

@@ -192,6 +192,15 @@ jobs:
           python3 /tmp/flatpak-cargo-generator.py "$CARGO_LOCK_PATH" \
             -o "$CARGO_SOURCES_OUTPUT"
 
+      # flatpak-builder updates the runtimes baked into the image. On runner
+      # hosts whose overlayfs cannot rename image-layer directories, that
+      # update fails with "Invalid cross-device link" (EXDEV). The image
+      # digest is the same on hosts that pass and hosts that fail, so pinning
+      # it does not help. The action copies the installation into the
+      # writable layer only where the probe fails.
+      - name: Make the image's Flatpak installations updatable
+        uses: $/.github/actions/flatpak-copy-up
+
       - name: Build
         # `uses:` can't take an expression (actionlint: "context inputs is
         # not allowed here"), so this can't be a per-caller input. Pinned to

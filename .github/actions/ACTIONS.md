@@ -24,6 +24,7 @@ Cross-repository callers pin a complete commit SHA and keep it current through R
 |---|---|---|---|
 | **Arch Plan** | [`.github/actions/arch-plan`](arch-plan/) | Validates and normalizes target architectures (`x86_64`, `aarch64`) for Flatpak builds, emitting execution plans, runner maps, and primary tags. | — |
 | **CI Contract Check** | [`.github/actions/ci-contract-check`](ci-contract-check/) | Verifies that all criteria declared in `green-criteria.yml` are asserted by reachable workflow jobs or steps. | — |
+| **Flatpak Copy-Up** | [`.github/actions/flatpak-copy-up`](flatpak-copy-up/) | Copies the Flatpak installations of a container image into the writable layer when overlayfs cannot rename image-layer directories (EXDEV). | — |
 | **Fork Safety Check** | [`.github/actions/fork-safety-check`](fork-safety-check/) | Verifies that `pull_request` workflows declare permissions, avoid unsafe triggers (`pull_request_target`), and protect write steps. | — |
 | **Publish Flatpak OCI Index** | [`.github/actions/publish-flatpak-index`](publish-flatpak-index/) | Wraps `update-flatpak-index` with clone, commit, and push-with-retry against `tuna-os/docs` to avoid concurrency races among publishers. | [README](publish-flatpak-index/README.md) |
 | **Simplified Technical English Lint** | [`.github/actions/ste-lint`](ste-lint/) | Lints Markdown prose against ASD-STE100 rules using a configurable per-repository budget and advisory PR annotations. | [README](ste-lint/README.md) |
@@ -155,4 +156,18 @@ Cross-repository callers pin a complete commit SHA and keep it current through R
       repo-name: tuna-os/mandelbrot
       index-file: index-repo/static/flatpak/index/static
       tags: latest
+  ```
+
+---
+
+### 7. `flatpak-copy-up`
+- **Location:** [`.github/actions/flatpak-copy-up/action.yml`](flatpak-copy-up/action.yml)
+- **Description:** Run this action in a `flatpak-github-actions` container job before `flatpak-builder`. A runtime update renames the deploy directory that it retires. Some runner hosts mount the container root without overlayfs `redirect_dir`. On these hosts, that rename fails with `Invalid cross-device link` (EXDEV) for each directory from the image. First, the action does a test: it renames a directory from the image. If the rename fails with EXDEV, the action copies each installation into the writable layer. On other hosts, the action changes nothing. The log shows the root mount options and the copy time.
+- **Inputs:**
+  - `installations` *(optional, default: system and `$HOME` user installations)*: Space-separated installation directories to check.
+- **Usage:**
+  ```yaml
+  - name: Make the image's Flatpak installations updatable
+    uses: tuna-os/.github/.github/actions/flatpak-copy-up@<reviewed-main-sha> # main
+  - uses: flatpak/flatpak-github-actions/flatpak-builder@v6.8
   ```

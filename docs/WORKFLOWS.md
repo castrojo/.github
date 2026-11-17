@@ -452,6 +452,11 @@ jobs:
 - `publish` is a matrix with one job per planned arch. Each job downloads its
   own OCI artifact, pushes its own arch tags, and calls `publish-flatpak-index`
   with its own clone/retry/push cycle against `tuna-os/docs`.
+- Before the build, each `build-oci` job runs the `flatpak-copy-up` action.
+  On some hosts, the job cannot update the runtimes in the image. On these hosts,
+  the update fails with `Invalid cross-device link`. The action prevents this
+  failure. The image digest does not change between hosts, so a digest pin
+  does not help.
 - `attach-bundles` only runs on tag pushes (`startsWith(github.ref, 'refs/tags/')`).
 - Not used by `tuna-os/Tavern`: it has a prod/main branch split and a promotion
   flow this workflow does not model (tuna-os/tunaOS#1183).

@@ -44,6 +44,10 @@ inputs:
       ssh-key is empty; kept for callers that have not moved to the deploy key.
     required: false
     default: ""
+  require-appstream:
+    description: Fail instead of warning when the image carries no AppStream metadata
+    required: false
+    default: "false"
   max-attempts:
     description: Max push attempts before failing the step
     required: false
@@ -64,6 +68,7 @@ runs:
         DOCS_REPO: ${{ inputs.docs-repo }}
         FLATPAK_INDEX_SSH_KEY: ${{ inputs.ssh-key }}
         FLATPAK_INDEX_TOKEN: ${{ inputs.token }}
+        REQUIRE_APPSTREAM: ${{ inputs.require-appstream }}
         MAX_ATTEMPTS: ${{ inputs.max-attempts }}
       run: |
         set -euo pipefail
@@ -144,7 +149,8 @@ runs:
             --index-file "$INDEX_REPO/$INDEX_FILE" \
             --repo-name "$REPO_NAME" \
             --registry "$REGISTRY" \
-            --tags "${tag_args[@]}"
+            --tags "${tag_args[@]}" \
+            $([ "$REQUIRE_APPSTREAM" = "true" ] && echo "--require-appstream" || true)
 
           pushd "$INDEX_REPO" >/dev/null
           # tuna-os/docs keeps remote icon metadata and PNG files generated

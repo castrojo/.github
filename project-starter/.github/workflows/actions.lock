@@ -14,6 +14,7 @@ workflows:
     '.github/workflows/flatpak-remote.yml':
         - 'actions/checkout@v7.0.1'
         - 'flatpak/flatpak-github-actions@v6.8'
+        - 'tuna-os/.github@main'
     '.github/workflows/release.yml':
         - 'actions/checkout@v7.0.1'
 dependencies:
@@ -37,6 +38,11 @@ dependencies:
         commit: 'sha1-9b3254085494b55a0f7c4c2b3d2d52cc712ce370'
         owner_id: 9919
         repo_id: 259445878
+    'tuna-os/.github@main':
+        ref: 'main'
+        commit: 'sha1-6c76230bdd69e19634d9c74d5e3edbd8eacadd9f'
+        owner_id: 223733964
+        repo_id: 1187761922
     'zizmorcore/zizmor-action@v0.8.1':
         ref: 'v0.8.1'
         commit: 'sha1-45d7276c9ca790aabd705e31ca99c6185c3e76dd'

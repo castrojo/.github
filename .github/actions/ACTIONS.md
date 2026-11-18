@@ -101,6 +101,7 @@ Cross-repository callers pin a complete commit SHA and keep it current through R
   - `registry` *(optional, default: `ghcr.io`)*: Container registry host.
   - `tags` *(optional, default: `latest`)*: Space-separated list of image tags.
   - `docs-repo` *(optional, default: `tuna-os/docs`)*: Target documentation repository.
+  - `require-appstream` *(optional, default: `"false"`)*: Fail if AppStream metadata labels are missing. When `"false"`, a missing label gives a warning and the publish continues.
   - `max-attempts` *(optional, default: `"8"`)*: Maximum push attempts before failure.
 - **Usage:**
   ```yaml

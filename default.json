@@ -30,6 +30,15 @@
         "github-actions"
       ],
       "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Wait 3 days before taking a new npm, PyPI or crates.io release (supply-chain cooldown). Minor and patch updates merge themselves, so without a wait a release can reach main minutes after publication. Security updates skip the wait. A repository that needs one package sooner sets minimumReleaseAge to null for it.",
+      "matchDatasources": [
+        "npm",
+        "pypi",
+        "crate"
+      ],
+      "minimumReleaseAge": "3 days"
     }
   ]
 }

@@ -75,6 +75,10 @@ CASES: list[tuple[str, dict, bool]] = [
     ),
 ]
 
+# Public registries whose releases the shared preset must not take on the day
+# of publication. Renovate reads a release timestamp from each of them.
+COOLDOWN_DATASOURCES = ("npm", "pypi", "crate")
+
 
 def main() -> int:
     failures = []
@@ -101,13 +105,32 @@ def main() -> int:
     if policy.check(preset):
         failures.append(f"  - default.json (the shared preset) violates the policy: {policy.check(preset)}")
 
+    # Minor and patch updates merge themselves, so the preset must hold a new
+    # registry release back before Renovate raises it. Only a rule that
+    # matches on the datasource alone counts: a rule with one more matcher
+    # covers some of that registry's packages, not all of them.
+    waited = {
+        datasource
+        for rule in preset.get("packageRules", [])
+        if rule.get("minimumReleaseAge") not in (None, "", "0 days")
+        and set(rule) <= {"description", "matchDatasources", "minimumReleaseAge"}
+        for datasource in rule.get("matchDatasources", [])
+    }
+    for datasource in COOLDOWN_DATASOURCES:
+        if datasource not in waited:
+            failures.append(
+                f"  - default.json has no minimumReleaseAge rule for the '{datasource}' "
+                "datasource: its minor and patch updates would merge on the day of release"
+            )
+
     if failures:
         print("FAIL: renovate automerge policy checker regressed:", file=sys.stderr)
         print("\n".join(failures), file=sys.stderr)
         return 1
     print(
         f"OK: project-starter checker is synchronized; {len(CASES)} policy "
-        "cases + default.json behave as pinned."
+        "cases + default.json behave as pinned; default.json waits before "
+        f"taking {', '.join(COOLDOWN_DATASOURCES)} releases."
     )
     return 0
 

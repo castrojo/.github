@@ -39,6 +39,7 @@ jobs:
           set -euo pipefail
           for test in \
             scripts/test-arch-plan.py \
+            scripts/test-publish-rolling-channel.py \
             scripts/test-release-verification.py \
             scripts/test-renovate-automerge-policy.py \
             scripts/test-roadmap-index.py \

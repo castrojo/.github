@@ -303,15 +303,22 @@ jobs:
           fi
           # :latest (no arch suffix) tracks the primary arch, chosen by the
           # plan -- only the primary instance pushes it, so it never depends on
-          # which matrix instance happens to run first.
-          if [ "$arch" = "$PRIMARY" ]; then
+          # which matrix instance happens to run first. It is the rolling
+          # channel, gated behind prod promotion; a release-tag dispatch must
+          # not move it (tuna-os/Tavern#195), so skip it on tag refs. The
+          # version-qualified <tag>-<arch> image above is a release artifact,
+          # not the rolling channel, so it is always pushed.
+          if [[ "$GITHUB_REF" != refs/tags/* ]] && [ "$arch" = "$PRIMARY" ]; then
             skopeo copy "oci:${dir}" "docker://${IMAGE_REGISTRY}/${IMAGE_REPO}:latest"
           fi
 
       # One publish-flatpak-index call per arch in the plan (only x86_64/aarch64
       # exist today across every tuna-os app) -- each call is its own
-      # independent clone/retry/push cycle, same as before consolidation.
+      # independent clone/retry/push cycle, same as before consolidation. The
+      # index serves :latest, so this is the rolling channel and is skipped on
+      # a release-tag dispatch (tuna-os/Tavern#195).
       - name: Update central index — ${{ matrix.arch }}
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: $/.github/actions/publish-flatpak-index
         with:
           oci-dir: oci-${{ matrix.arch }}
